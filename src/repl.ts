@@ -1,12 +1,6 @@
-import { createInterface } from 'node:readline';
+import { createInterface } from "node:readline";
+import { getCommands } from "./commands.js";
 
-
-export function cleanInput(input: string): string[] {
-  return input
-    .toLowerCase()
-    .trim()
-    .split(/\s+/);
-}
 
 export function startREPL() {
   const rl = createInterface({
@@ -14,15 +8,43 @@ export function startREPL() {
     output: process.stdout,
     prompt: "Pokedex > ",
   });
+
   rl.prompt();
+
   rl.on('line', (input: string) => {
     const words = cleanInput(input);
-    if (words.length == 0) {
+    if (words.length === 0) {
       rl.prompt();
       return;
     }
-    console.log(`Your command was: ${words[0]}`);
+
+    const commandName = words[0];
+    const commands = getCommands();
+    const command = commands[commandName];
+    if (!command) {
+      console.log(
+        `Unknown command: "${commandName}". Type "help" for a list of commands.`
+      );
+      rl.prompt();
+      return;
+    }
+
+    try {
+      command.callback(commands);
+    } catch (e) {
+      console.log(e);
+    }
+
     rl.prompt();
   });
+}
+
+
+export function cleanInput(input: string): string[] {
+  return input
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter((word) => word !== "");
 }
 
