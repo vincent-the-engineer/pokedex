@@ -1,17 +1,15 @@
 import { createInterface } from "node:readline";
 
-import { initState } from "./state.js";
+import { State } from "./state.js";
 
 
-export function startREPL() {
-  const state = initState();
+export function startREPL(state: State) {
+  state.readline.prompt();
 
-  state.rl.prompt();
-
-  state.rl.on('line', (input: string) => {
+  state.readline.on('line', async (input: string) => {
     const words = cleanInput(input);
     if (words.length === 0) {
-      state.rl.prompt();
+      state.readline.prompt();
       return;
     }
 
@@ -21,17 +19,21 @@ export function startREPL() {
       console.log(
         `Unknown command: "${commandName}". Type "help" for a list of commands.`
       );
-      state.rl.prompt();
+      state.readline.prompt();
       return;
     }
 
     try {
-      command.callback(state);
+      await command.callback(state);
     } catch (e) {
-      console.log(e);
+      if (e instanceof Error) {
+        console.log(e.message);
+      } else {
+        console.log("An unknown error has occurred.");
+     }
     }
 
-    state.rl.prompt();
+    state.readline.prompt();
   });
 }
 
