@@ -20,7 +20,7 @@ export type State = {
 };
 
 
-export function initState() {
+export function initState(cacheTimeToLive: number, cacheReapInterval: number) {
   const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -30,7 +30,7 @@ export function initState() {
   return {
     readline: rl,
     commands: getCommands(),
-    pokeAPI: new PokeAPI(),
+    pokeAPI: new PokeAPI(cacheTimeToLive, cacheReapInterval),
     nextLocationsURL: "",
     prevLocationsURL: "",
   };

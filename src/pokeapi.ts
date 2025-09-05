@@ -1,28 +1,64 @@
+import { Cache } from "./pokecache.js";
+
+
 export class PokeAPI {
   private static readonly baseURL = "https://pokeapi.co/api/v2";
-  private static readonly locationAreaEndpoint = "location-area";
 
-  constructor() {}
+  #cache: Cache;
+
+  constructor(cacheTimeToLive: number, cacheReapInterval: number) {
+    this.#cache = new Cache(cacheTimeToLive, cacheReapInterval);
+    this.#cache.startReapLoop();
+  }
 
   async fetchLocations(pageURL?: string): Promise<ShallowLocations> {
-    const url = pageURL ? pageURL : `${PokeAPI.baseURL}/`
-                + `${PokeAPI.locationAreaEndpoint}/`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
+    const url = pageURL ? pageURL : `${PokeAPI.baseURL}/location-area`;
+
+    const cached = this.#cache.get(url);
+    if (cached) {
+      return cached;
     }
-    return await response.json() as ShallowLocations;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+      const shallowLocations = await response.json() as ShallowLocations;
+      this.#cache.add(url, shallowLocations);
+      return shallowLocations;
+    } catch (e) {
+      if (e instanceof Error) {
+        throw new Error(`Error fetching locations: ${e.message}`);
+      } else {
+        throw new Error("Unknown error occurred while fetching locations");
+      }
+    }
   }
 
   async fetchLocation(locationName: string): Promise<Location> {
-    const resourceName = locationName ? `${locationName}/` : "";
-    const url = `${PokeAPI.baseURL}/${PokeAPI.locationAreaEndpoint}/`
-                + `${resourceName}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
+    const url = `${PokeAPI.baseURL}/location-area/${locationName}`;
+
+    const cached = this.#cache.get(url);
+    if (cached) {
+      return cached;
     }
-    return await response.json() as Location;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Response status: ${response.status}`);
+      }
+      const location = await response.json() as Location;
+      this.#cache.add(url, location);
+      return location;
+    } catch (e) {
+      if (e instanceof Error) {
+        throw new Error(`Error fetching location: ${e.message}`);
+      } else {
+        throw new Error("Unknown error occurred while fetching location");
+      }
+     }
   }
 }
 
